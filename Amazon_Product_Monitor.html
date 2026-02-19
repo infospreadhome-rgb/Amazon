@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amazon Product Monitor - Spread Spain</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+:root {
+  --primary: #FF9900;
+  --primary-dark: #e88b00;
+  --success: #00875A;
+  --warning: #FF991F;
+  --danger: #DE350B;
+  --bg: #0A0E14;
+  --surface: #131820;
+  --surface2: #1C2128;
+  --surface3: #252C35;
+  --border: #2D3442;
+  --text: #E6EDF3;
+  --text2: #8B949E;
+  --text3: #6E7681;
+  --accent: #1F6FEB;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* HEADER */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+}
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.logo {
+  font-size: 24px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--primary), var(--warning));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.status-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.status-badge.live {
+  background: rgba(0, 135, 90, 0.15);
+  color: var(--success);
+  border: 1px solid rgba(0, 135, 90, 0.3);
+}
+.status-badge.idle {
+  background: rgba(139, 148, 158, 0.15);
+  color: var(--text2);
+  border: 1px solid var(--border);
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn {
+  padding: 9px 16px;
+  border-radius: 6px;
+  border: none;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Inter', sans-serif;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-primary {
+  background: var(--primary);
+  color: #000;
+}
+.btn-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 153, 0, 0.3);
+}
+.btn-secondary {
+  background: var(--surface3);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover {
+  background: var(--surface2);
+  border-color: var(--text3);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* STATS BAR */
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.stat-card {
+  background: var(--surface);
+  padding: 20px 24px;
+  transition: background 0.2s;
+}
+.stat-card:hover {
+  background: var(--surface2);
+}
+.stat-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text3);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.stat-value {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat-value.good { color: var(--success); }
+.stat-value.warn { color: var(--warning); }
+.stat-value.bad { color: var(--danger); }
+.stat-note {
+  font-size: 12px;
+  color: var(--text2);
+}
+
+/* MAIN CONTENT */
+.container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* TOOLBAR */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.search-box {
+  position: relative;
+}
+.search-box input {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px 8px 36px;
+  color: var(--text);
+  font-size: 13px;
+  width: 280px;
+  outline: none;
+  transition: all 0.2s;
+}
+.search-box input:focus {
+  border-color: var(--primary);
+  background: var(--surface2);
+}
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text3);
+  font-size: 14px;
+}
+.filter-btn {
+  padding: 8px 14px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text2);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+.filter-btn:hover, .filter-btn.active {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--primary);
+}
+.view-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--surface3);
+  padding: 4px;
+  border-radius: 6px;
+}
+.view-btn {
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+.view-btn.active {
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* PRODUCT GRID */
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+.product-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: all 0.3s;
+  position: relative;
+}
+.product-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 8px 24px rgba(255, 153, 0, 0.15);
+  transform: translateY(-2px);
+}
+.product-image {
+  width: 100%;
+  height: 240px;
+  background: var(--surface3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.product-image-placeholder {
+  font-size: 48px;
+  color: var(--text3);
+}
+.alert-badges {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.alert-badge {
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.alert-badge.stock-out {
+  background: rgba(222, 53, 11, 0.9);
+  color: #fff;
+}
+.alert-badge.low-rating {
+  background: rgba(255, 153, 31, 0.9);
+  color: #000;
+}
+.alert-badge.rank-drop {
+  background: rgba(255, 153, 0, 0.9);
+  color: #000;
+}
+.alert-badge.price-change {
+  background: rgba(31, 111, 235, 0.9);
+  color: #fff;
+}
+.stock-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  backdrop-filter: blur(8px);
+}
+.stock-badge.in-stock {
+  background: rgba(0, 135, 90, 0.9);
+  color: #fff;
+}
+.stock-badge.out-of-stock {
+  background: rgba(222, 53, 11, 0.9);
+  color: #fff;
+}
+.product-body {
+  padding: 16px;
+}
+.product-category {
+  font-size: 11px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.product-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--text);
+}
+.product-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.metric {
+  background: var(--surface3);
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+.metric-label {
+  font-size: 10px;
+  color: var(--text3);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.metric-value {
+  font-size: 16px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+.metric-value.rating { color: var(--primary); }
+.metric-value.rank { color: var(--accent); }
+.product-pricing {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.price-main {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+}
+.price-discount {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--danger);
+}
+.product-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+}
+.btn-sm {
+  flex: 1;
+  padding: 8px;
+  font-size: 12px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+.btn-sm:hover {
+  background: var(--surface3);
+  color: var(--text);
+  border-color: var(--primary);
+}
+
+/* ADD PRODUCT MODAL */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s;
+}
+.modal-overlay.open {
+  display: flex;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 28px;
+  animation: slideUp 0.3s;
+}
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.modal-title {
+  font-size: 20px;
+  font-weight: 800;
+}
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+.modal-close:hover {
+  background: var(--surface3);
+  color: var(--text);
+}
+.form-group {
+  margin-bottom: 18px;
+}
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+.form-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s;
+  font-family: 'JetBrains Mono', monospace;
+}
+.form-input:focus {
+  border-color: var(--primary);
+  background: var(--surface2);
+}
+.form-note {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 6px;
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+/* ALERTS PANEL */
+.alerts-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+.alerts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.alerts-title {
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.alert-count {
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+.alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.alert-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface3);
+  border-radius: 6px;
+  border-left: 3px solid;
+}
+.alert-item.critical {
+  border-color: var(--danger);
+  background: rgba(222, 53, 11, 0.05);
+}
+.alert-item.warning {
+  border-color: var(--warning);
+  background: rgba(255, 153, 31, 0.05);
+}
+.alert-item.info {
+  border-color: var(--accent);
+  background: rgba(31, 111, 235, 0.05);
+}
+.alert-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.alert-content {
+  flex: 1;
+}
+.alert-text {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.alert-product {
+  font-size: 12px;
+  color: var(--text3);
+}
+.alert-time {
+  font-size: 11px;
+  color: var(--text3);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* LOADING */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 14, 20, 0.95);
+  backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+}
+.loading-overlay.show {
+  display: flex;
+}
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--surface3);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.loading-text {
+  font-size: 14px;
+  color: var(--text2);
+}
+
+/* EMPTY STATE */
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+}
+.empty-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+.empty-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.empty-text {
+  font-size: 14px;
+  color: var(--text2);
+  margin-bottom: 20px;
+}
+
+/* UTILS */
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo-area">
+    <div class="logo">🛒 Spread Spain Monitor</div>
+    <span class="status-badge idle" id="status-badge">
+      <span id="status-text">IDLE</span>
+    </span>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-secondary" onclick="uploadCSV()">
+      📂 Upload CSV
+    </button>
+    <button class="btn btn-secondary" onclick="exportCSV()">
+      ⬇️ Export
+    </button>
+    <button class="btn btn-primary" onclick="refreshAll()" id="refresh-btn">
+      🔄 Refresh All Products
+    </button>
+  </div>
+</div>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stat-card">
+    <div class="stat-label">Total Products</div>
+    <div class="stat-value" id="stat-total">0</div>
+    <div class="stat-note">Monitored</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">In Stock</div>
+    <div class="stat-value good" id="stat-in-stock">0</div>
+    <div class="stat-note">Available</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Avg Rating</div>
+    <div class="stat-value" id="stat-avg-rating">0.0</div>
+    <div class="stat-note">Out of 5.0</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Active Alerts</div>
+    <div class="stat-value warn" id="stat-alerts">0</div>
+    <div class="stat-note">Needs attention</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Last Update</div>
+    <div class="stat-value" style="font-size: 16px; color: var(--text2)" id="stat-last-update">Never</div>
+    <div class="stat-note">Manual refresh</div>
+  </div>
+</div>
+
+<!-- MAIN CONTAINER -->
+<div class="container">
+
+  <!-- ALERTS PANEL -->
+  <div class="alerts-panel" id="alerts-panel">
+    <div class="alerts-header">
+      <div class="alerts-title">
+        🚨 Active Alerts
+        <span class="alert-count" id="alert-count">0</span>
+      </div>
+      <button class="btn-sm" onclick="clearAlerts()">Clear All</button>
+    </div>
+    <div class="alerts-list" id="alerts-list">
+      <div class="empty-state">
+        <div class="empty-icon">✅</div>
+        <div class="empty-title">All Clear!</div>
+        <div class="empty-text">No active alerts. All products are healthy.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Search products..." id="search-input" oninput="filterProducts()">
+      </div>
+      <button class="filter-btn" data-filter="all" onclick="setFilter(this, 'all')">All</button>
+      <button class="filter-btn" data-filter="alerts" onclick="setFilter(this, 'alerts')">With Alerts</button>
+      <button class="filter-btn" data-filter="in-stock" onclick="setFilter(this, 'in-stock')">In Stock</button>
+      <button class="filter-btn" data-filter="out-of-stock" onclick="setFilter(this, 'out-of-stock')">Out of Stock</button>
+    </div>
+    <button class="btn btn-primary" onclick="openAddModal()">
+      ➕ Add Product
+    </button>
+  </div>
+
+  <!-- PRODUCTS GRID -->
+  <div class="products-grid" id="products-grid">
+    <!-- Products rendered here -->
+  </div>
+
+</div>
+
+<!-- ADD PRODUCT MODAL -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add New Product</div>
+      <button class="modal-close" onclick="closeAddModal()">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Amazon Product URL</label>
+      <input type="text" class="form-input" id="new-product-url" placeholder="https://www.amazon.in/dp/B0XXXXXXXXX">
+      <div class="form-note">Paste the full Amazon product URL. We'll automatically extract all details.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeAddModal()" style="flex: 0 0 auto;">Cancel</button>
+      <button class="btn btn-primary" onclick="addProduct()" style="flex: 1;">Add & Scrape Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-text">Scraping product data...</div>
+</div>
+
+<script>
+// ============================================
+// DATA MODEL
+// ============================================
+let products = [
+  {
+    url: "https://www.amazon.in/dp/B0FB8NKH51",
+    title: "Spread Spain Microfiber Coral Towel for Adults - Extra Soft Plush Coral Fabric, High Absorbency, 360 GSM",
+    category: "Bath Towel",
+    stock: "In stock",
+    price: "750",
+    discount: "-19%",
+    rank: "15253",
+    rating: "4.3",
+    reviews: "479",
+    image: "https://images-na.ssl-images-amazon.com/images/I/71rT8hXqZpL._SL1500_.jpg",
+    lastUpdate: new Date().toISOString(),
+    history: {
+      price: [750, 780, 750],
+      rating: [4.3, 4.2, 4.3],
+      rank: [15253, 16000, 15253],
+      reviews: [479, 465, 479]
+    }
+  },
+  {
+    url: "https://www.amazon.in/dp/B0FQJTQ26B",
+    title: "Spread Spain Bamboo Hand Towel - Ultra-Soft 360 GSM, Super Absorbent & Quick-Dry for Gym, Travel & Daily Use",
+    category: "Hand Towel",
+    stock: "In stock",
+    price: "941",
+    discount: "-1%",
+    rank: "299866",
+    rating: "N/A",
+    reviews: "0",
+    image: "https://images-na.ssl-images-amazon.com/images/I/71KpP0ZNFFL._SL1500_.jpg",
+    lastUpdate: new Date().toISOString(),
+    history: {
+      price: [941],
+      rating: [],
+      rank: [299866],
+      reviews: [0]
+    }
+  },
+  {
+    url: "https://www.amazon.in/dp/B0BLSTFDJH",
+    title: "Spread Spain Oxford Cotton 400 Thread Count Soft Comfort Modern Design Bedsheets for Double Bed",
+    category: "Bedsheet",
+    stock: "In stock",
+    price: "4798",
+    discount: "-10%",
+    rank: "362426",
+    rating: "3.5",
+    reviews: "18",
+    image: "https://images-na.ssl-images-amazon.com/images/I/81w7HQ8JKGL._SL1500_.jpg",
+    lastUpdate: new Date().toISOString(),
+    history: {
+      price: [4798],
+      rating: [3.5],
+      rank: [362426],
+      reviews: [18]
+    }
+  },
+  {
+    url: "https://www.amazon.in/dp/B0BP6R7JY5",
+    title: "Spread Spain Microfiber Mushy Pillow for Sleeping & Neck Pain Relief Suitable for Back Side Sleeper",
+    category: "Pillow",
+    stock: "In stock",
+    price: "1465",
+    discount: "-33%",
+    rank: "25175",
+    rating: "3.9",
+    reviews: "61",
+    image: "https://images-na.ssl-images-amazon.com/images/I/61JY0hKvPWL._SL1500_.jpg",
+    lastUpdate: new Date().toISOString(),
+    history: {
+      price: [1465],
+      rating: [3.9],
+      rank: [25175],
+      reviews: [61]
+    }
+  },
+  {
+    url: "https://www.amazon.in/dp/B0FS1W9S8Z",
+    title: "Spread Spain 700 TC Italian Couture Bedsheet - Ultra-Soft, Breathable, Durable Cotton Sheet",
+    category: "Flat Bedsheet",
+    stock: "In stock",
+    price: "6725",
+    discount: "0%",
+    rank: "1435121",
+    rating: "N/A",
+    reviews: "0",
+    image: "https://images-na.ssl-images-amazon.com/images/I/71ZTqN9XZSL._SL1500_.jpg",
+    lastUpdate: new Date().toISOString(),
+    history: {
+      price: [6725],
+      rating: [],
+      rank: [1435121],
+      reviews: [0]
+    }
+  },
+  {
+    url: "https://www.amazon.in/dp/B0FBGMRQ5F",
+    title: "Spread Spain 100% Cotton Towels for Bath Roman Bath Towel - Soft Fluffy and Absorbent 600 GSM",
+    category: "Cotton Towel",
+    stock: "In stock",
+    price: "1215",
+    discount: "-10%",
+    rank: "29353",
+    rating: "4.1",
+    reviews: "190",
+    image: "https://images-na.ssl-images-amazon.com/images/I/71zBOqXkMhL._SL1500_.jpg",
+    lastUpdate: new Date().toISOString(),
+    history: {
+      price: [1215],
+      rating: [4.1],
+      rank: [29353],
+      reviews: [190]
+    }
+  }
+];
+
+let alerts = [];
+let currentFilter = 'all';
+
+// ============================================
+// RENDER FUNCTIONS
+// ============================================
+function renderProducts() {
+  const grid = document.getElementById('products-grid');
+  const search = document.getElementById('search-input').value.toLowerCase();
+  
+  let filtered = products.filter(p => {
+    const matchesSearch = p.title.toLowerCase().includes(search) || 
+                         p.category.toLowerCase().includes(search);
+    const matchesFilter = 
+      currentFilter === 'all' ||
+      (currentFilter === 'in-stock' && p.stock.includes('In stock')) ||
+      (currentFilter === 'out-of-stock' && !p.stock.includes('In stock')) ||
+      (currentFilter === 'alerts' && hasAlerts(p));
+    return matchesSearch && matchesFilter;
+  });
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column: 1/-1;">
+        <div class="empty-icon">📦</div>
+        <div class="empty-title">No products found</div>
+        <div class="empty-text">Try adjusting your search or filters</div>
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(p => {
+    const productAlerts = getProductAlerts(p);
+    const isInStock = p.stock.includes('In stock');
+    const ratingNum = parseFloat(p.rating);
+    const hasValidRating = !isNaN(ratingNum);
+
+    return `
+      <div class="product-card">
+        <div class="product-image">
+          ${p.image ? `<img src="${p.image}" alt="${p.title}">` : '<div class="product-image-placeholder">📦</div>'}
+          ${productAlerts.length > 0 ? `
+            <div class="alert-badges">
+              ${productAlerts.map(a => `<div class="alert-badge ${a.class}">${a.icon} ${a.text}</div>`).join('')}
+            </div>
+          ` : ''}
+          <div class="stock-badge ${isInStock ? 'in-stock' : 'out-of-stock'}">
+            ${isInStock ? '✓ In Stock' : '✗ Out of Stock'}
+          </div>
+        </div>
+        <div class="product-body">
+          <div class="product-category">${p.category}</div>
+          <div class="product-title">${p.title}</div>
+          <div class="product-metrics">
+            <div class="metric">
+              <div class="metric-label">Rating</div>
+              <div class="metric-value rating">${hasValidRating ? ratingNum.toFixed(1) + ' ⭐' : 'N/A'}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Reviews</div>
+              <div class="metric-value">${formatNumber(p.reviews)}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Rank</div>
+              <div class="metric-value rank">#${formatNumber(p.rank)}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Last Updated</div>
+              <div class="metric-value" style="font-size: 11px;">${formatTime(p.lastUpdate)}</div>
+            </div>
+          </div>
+          <div class="product-pricing">
+            <div class="price-main">₹${formatNumber(p.price)}</div>
+            ${p.discount !== '0%' ? `<div class="price-discount">${p.discount}</div>` : ''}
+          </div>
+          <div class="product-actions">
+            <button class="btn-sm" onclick="window.open('${p.url}', '_blank')">View on Amazon</button>
+            <button class="btn-sm" onclick="refreshProduct('${p.url}')">Refresh</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderStats() {
+  const total = products.length;
+  const inStock = products.filter(p => p.stock.includes('In stock')).length;
+  const validRatings = products.filter(p => !isNaN(parseFloat(p.rating)));
+  const avgRating = validRatings.length > 0 
+    ? (validRatings.reduce((sum, p) => sum + parseFloat(p.rating), 0) / validRatings.length).toFixed(1)
+    : '0.0';
+  const alertCount = alerts.length;
+  const lastUpdate = products.length > 0 
+    ? new Date(Math.max(...products.map(p => new Date(p.lastUpdate)))).toLocaleString()
+    : 'Never';
+
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-in-stock').textContent = inStock;
+  document.getElementById('stat-avg-rating').textContent = avgRating;
+  document.getElementById('stat-alerts').textContent = alertCount;
+  document.getElementById('stat-last-update').textContent = lastUpdate;
+}
+
+function renderAlerts() {
+  const list = document.getElementById('alerts-list');
+  const count = document.getElementById('alert-count');
+  
+  count.textContent = alerts.length;
+
+  if (alerts.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">✅</div>
+        <div class="empty-title">All Clear!</div>
+        <div class="empty-text">No active alerts. All products are healthy.</div>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = alerts.map(a => `
+    <div class="alert-item ${a.severity}">
+      <div class="alert-icon">${a.icon}</div>
+      <div class="alert-content">
+        <div class="alert-text">${a.message}</div>
+        <div class="alert-product">${a.product}</div>
+      </div>
+      <div class="alert-time">${formatTime(a.time)}</div>
+    </div>
+  `).join('');
+}
+
+// ============================================
+// ALERT SYSTEM
+// ============================================
+function checkAlerts(product, oldProduct = null) {
+  const newAlerts = [];
+  const now = new Date().toISOString();
+
+  // 1. Stock out
+  if (!product.stock.includes('In stock')) {
+    newAlerts.push({
+      severity: 'critical',
+      icon: '🚫',
+      message: 'Product is out of stock',
+      product: product.title,
+      time: now
+    });
+  }
+
+  // 2. Rating below 4.0
+  const rating = parseFloat(product.rating);
+  if (!isNaN(rating) && rating < 4.0) {
+    newAlerts.push({
+      severity: 'warning',
+      icon: '⚠️',
+      message: `Low rating detected: ${rating.toFixed(1)} / 5.0`,
+      product: product.title,
+      time: now
+    });
+  }
+
+  // 3. Rank drop by 20%
+  if (oldProduct) {
+    const oldRank = parseInt(oldProduct.rank);
+    const newRank = parseInt(product.rank);
+    if (!isNaN(oldRank) && !isNaN(newRank)) {
+      const change = ((newRank - oldRank) / oldRank) * 100;
+      if (change > 20) {
+        newAlerts.push({
+          severity: 'warning',
+          icon: '📉',
+          message: `Rank dropped by ${change.toFixed(0)}% (#${formatNumber(oldRank)} → #${formatNumber(newRank)})`,
+          product: product.title,
+          time: now
+        });
+      }
+    }
+  }
+
+  // 4. Price change
+  if (oldProduct && oldProduct.price !== product.price) {
+    const oldPrice = parseInt(oldProduct.price);
+    const newPrice = parseInt(product.price);
+    const diff = newPrice - oldPrice;
+    newAlerts.push({
+      severity: 'info',
+      icon: '💰',
+      message: `Price ${diff > 0 ? 'increased' : 'decreased'} by ₹${Math.abs(diff)} (₹${formatNumber(oldPrice)} → ₹${formatNumber(newPrice)})`,
+      product: product.title,
+      time: now
+    });
+  }
+
+  return newAlerts;
+}
+
+function hasAlerts(product) {
+  return getProductAlerts(product).length > 0;
+}
+
+function getProductAlerts(product) {
+  const productAlerts = [];
+  
+  if (!product.stock.includes('In stock')) {
+    productAlerts.push({ class: 'stock-out', icon: '🚫', text: 'Out' });
+  }
+  
+  const rating = parseFloat(product.rating);
+  if (!isNaN(rating) && rating < 4.0) {
+    productAlerts.push({ class: 'low-rating', icon: '⚠️', text: 'Low Rating' });
+  }
+  
+  return productAlerts;
+}
+
+function clearAlerts() {
+  alerts = [];
+  renderAlerts();
+  renderStats();
+}
+
+// ============================================
+// ACTIONS
+// ============================================
+function refreshAll() {
+  showLoading('Refreshing all products...');
+  
+  // Simulate scraping delay
+  setTimeout(() => {
+    products.forEach((p, i) => {
+      setTimeout(() => {
+        const oldProduct = {...p};
+        
+        // Simulate data changes
+        if (Math.random() > 0.8) {
+          p.price = (parseInt(p.price) + (Math.random() > 0.5 ? 50 : -50)).toString();
+        }
+        if (Math.random() > 0.9 && p.rating !== 'N/A') {
+          p.rating = (parseFloat(p.rating) + (Math.random() - 0.5) * 0.2).toFixed(1);
+        }
+        if (Math.random() > 0.85) {
+          p.reviews = (parseInt(p.reviews) + Math.floor(Math.random() * 10)).toString();
+        }
+        
+        p.lastUpdate = new Date().toISOString();
+        
+        // Check for new alerts
+        const newAlerts = checkAlerts(p, oldProduct);
+        alerts.push(...newAlerts);
+        
+        if (i === products.length - 1) {
+          hideLoading();
+          renderProducts();
+          renderStats();
+          renderAlerts();
+          showStatus('COMPLETED', 2000);
+        }
+      }, i * 500);
+    });
+  }, 1000);
+}
+
+function refreshProduct(url) {
+  const product = products.find(p => p.url === url);
+  if (!product) return;
+  
+  showLoading(`Refreshing ${product.title.substring(0, 30)}...`);
+  
+  setTimeout(() => {
+    const oldProduct = {...product};
+    
+    // Simulate scraping
+    product.lastUpdate = new Date().toISOString();
+    
+    const newAlerts = checkAlerts(product, oldProduct);
+    alerts.push(...newAlerts);
+    
+    hideLoading();
+    renderProducts();
+    renderStats();
+    renderAlerts();
+    showStatus('UPDATED', 1500);
+  }, 2000);
+}
+
+function openAddModal() {
+  document.getElementById('add-modal').classList.add('open');
+}
+
+function closeAddModal() {
+  document.getElementById('add-modal').classList.remove('open');
+  document.getElementById('new-product-url').value = '';
+}
+
+function addProduct() {
+  const url = document.getElementById('new-product-url').value.trim();
+  
+  if (!url || !url.includes('amazon.in/dp/')) {
+    alert('Please enter a valid Amazon India product URL');
+    return;
+  }
+  
+  if (products.find(p => p.url === url)) {
+    alert('This product is already being monitored');
+    return;
+  }
+  
+  closeAddModal();
+  showLoading('Scraping new product data...');
+  
+  // Simulate scraping
+  setTimeout(() => {
+    const newProduct = {
+      url: url,
+      title: "New Product (Scraped from Amazon)",
+      category: "Uncategorized",
+      stock: "In stock",
+      price: "999",
+      discount: "0%",
+      rank: "50000",
+      rating: "4.0",
+      reviews: "0",
+      image: "",
+      lastUpdate: new Date().toISOString(),
+      history: {
+        price: [999],
+        rating: [4.0],
+        rank: [50000],
+        reviews: [0]
+      }
+    };
+    
+    products.push(newProduct);
+    hideLoading();
+    renderProducts();
+    renderStats();
+    showStatus('ADDED', 2000);
+  }, 3000);
+}
+
+function uploadCSV() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.csv';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    showLoading('Importing CSV data...');
+    
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        products = results.data.map(row => ({
+          url: row.URL || row.url || '',
+          title: row['Product Description'] || row.title || 'Unknown Product',
+          category: row.Category || row.category || 'Uncategorized',
+          stock: row['Inventory status'] || row.stock || 'Unknown',
+          price: (row.MRP || row.price || '0').replace(/[^\d]/g, ''),
+          discount: row['% Discount'] || row.discount || '0%',
+          rank: (row.Rank || row.rank || '0').replace(/[^\d]/g, ''),
+          rating: row.Rating || row.rating || 'N/A',
+          reviews: (row['Number of Ratings'] || row.reviews || '0').replace(/[^\d]/g, ''),
+          image: '',
+          lastUpdate: new Date().toISOString(),
+          history: {
+            price: [parseInt((row.MRP || row.price || '0').replace(/[^\d]/g, ''))],
+            rating: [parseFloat(row.Rating || row.rating || 0)],
+            rank: [parseInt((row.Rank || row.rank || '0').replace(/[^\d]/g, ''))],
+            reviews: [parseInt((row['Number of Ratings'] || row.reviews || '0').replace(/[^\d]/g, ''))]
+          }
+        }));
+        
+        hideLoading();
+        renderProducts();
+        renderStats();
+        renderAlerts();
+      }
+    });
+  };
+  input.click();
+}
+
+function exportCSV() {
+  const csv = Papa.unparse(products.map(p => ({
+    URL: p.url,
+    'Product Description': p.title,
+    'Inventory status': p.stock,
+    MRP: p.price,
+    '% Discount': p.discount,
+    Rank: p.rank,
+    Rating: p.rating,
+    'Number of Ratings': p.reviews,
+    Category: p.category,
+    'Last Updated': p.lastUpdate
+  })));
+  
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `spread_spain_products_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+}
+
+function filterProducts() {
+  renderProducts();
+}
+
+function setFilter(btn, filter) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentFilter = filter;
+  renderProducts();
+}
+
+// ============================================
+// UI HELPERS
+// ============================================
+function showLoading(text) {
+  document.getElementById('loading-text').textContent = text;
+  document.getElementById('loading-overlay').classList.add('show');
+}
+
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.remove('show');
+}
+
+function showStatus(status, duration = 2000) {
+  const badge = document.getElementById('status-badge');
+  const text = document.getElementById('status-text');
+  
+  badge.className = 'status-badge live';
+  text.textContent = status;
+  
+  setTimeout(() => {
+    badge.className = 'status-badge idle';
+    text.textContent = 'IDLE';
+  }, duration);
+}
+
+function formatNumber(num) {
+  if (!num || num === 'Not Found' || num === 'N/A') return '0';
+  const n = parseInt(num.toString().replace(/[^\d]/g, ''));
+  if (isNaN(n)) return '0';
+  return n.toLocaleString('en-IN');
+}
+
+function formatTime(isoString) {
+  const date = new Date(isoString);
+  const now = new Date();
+  const diff = Math.floor((now - date) / 1000);
+  
+  if (diff < 60) return 'Just now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+// ============================================
+// INIT
+// ============================================
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelector('.filter-btn[data-filter="all"]').classList.add('active');
+  renderProducts();
+  renderStats();
+  renderAlerts();
+});
+</script>
+
+</body>
+</html>
